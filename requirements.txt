@@ -1,0 +1,5 @@
+mysql-connector-python
+python-dotenv
+gspread
+requests
+pydantic
