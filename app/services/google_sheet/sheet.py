@@ -1,5 +1,4 @@
-import json
-from datetime import datetime
+
 from google.oauth2.service_account import Credentials
 from queue import Queue
 import gspread
@@ -42,24 +41,47 @@ def get_records():
     try:
         sheet = initialize_google_sheet()
         # Find rows where 'is_completed' is False
-        all_rows = sheet.get_all_values()  # Get all values, including headers
-        header = all_rows[0]  # Assuming the first row is the header
-        is_completed_col_index = header.index("is_completed")  # Find the column index of 'is_completed'
+        all_rows = sheet.get_all_values()  
+        header = all_rows[0]  
 
         queue = Queue()
         count = 0
 
         # Loop through rows starting from the second row (first is header)
         for row in all_rows[1:]:
-            if row[is_completed_col_index].lower() == "false":  # Assuming 'False' is represented as a string
-                # Map the row to a dictionary if needed
-                record = dict(zip(header, row))
-                queue.put(record)
-                count += 1
-                if count >= 50:
-                    break
+            # Map the row to a dictionary if needed
+            record = dict(zip(header, row))
+            queue.put(record)
+            count += 1
         
         constants.LOGGER.info(f"Added {count} records to the queue.")
         return queue, count
     except Exception as e:
         raise Exception(f"Error fetching pending records: {e}")
+
+def change_record_status():
+    """
+    Fetches up to 50 records where is_completed_logic_app is 'FALSE' and adds them to a queue,
+    then updates their status to 'TRUE'.
+    
+    """
+    try:
+        sheet = initialize_google_sheet()
+        all_rows = sheet.get_all_values()  
+        header = all_rows[0]  
+        is_completed_col_index = header.index("is_completed_logic_app") + 1 
+        
+        rows_to_update = []
+
+        for i, row in enumerate(all_rows[1:], start=2):  
+            if len(row) > is_completed_col_index - 1 and row[is_completed_col_index - 1].strip().lower() == "false":
+                rows_to_update.append(i)
+   
+        for row_index in rows_to_update:
+            sheet.update_cell(row_index, is_completed_col_index, "TRUE")
+
+        constants.LOGGER.info("Changed status of up to record.")
+
+    except Exception as e:
+        constants.LOGGER.error(f"Error changing record status: {e}")
+        raise Exception(f"Error changing record status: {e}")

@@ -36,7 +36,7 @@ def execute_query(connection, query: str, values: Optional[tuple] = None, fetch:
 
 class PhishingQueries:
     INSERT_URL = """
-        INSERT INTO all_data 
+        INSERT INTO phishing_url_tracking 
         (url, cluster_name) 
         VALUES (%s, %s)
     """
